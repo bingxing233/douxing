@@ -1,0 +1,32 @@
+// configs/recruitment_config.yml
+# 招聘相关配置
+api_keys:
+  # NeMo API密钥（示例格式）
+  nemo_api_key: "YOUR_NEMO_API_KEY"
+  
+  # 阿里云百炼平台API密钥
+  qwen_api_key: "YOUR_QWEN_API_KEY"
+
+# 模型配置
+models:
+  # 默认使用Qwen模型
+  default_model: "qwen-plus"
+  
+  # NeMo API配置
+  nemo:
+    base_url: "https://api.nvidia.com/v1"  # NeMo API基础URL
+
+  # 阿里云百炼平台配置
+  qwen:
+    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    model_name: "qwen-plus"
+    temperature: 0.7
+    max_tokens: 2048
+
+# 服务配置
+service:
+  # API服务端口
+  port: 8000
+  
+  # 是否启用调试模式
+  debug: false
