@@ -1,54 +1,90 @@
-// backend/agents/job_analyzer.py
-from nemo_agent import Agent, Toolkit
-from nemo_agent.llms import OpenAICompatible
+# backend/agents/job_analyzer.py
+from nat.agent.tool_calling_agent.agent import ToolCallAgentGraph as Agent
+from nat.llm.openai_llm import OpenAIModelConfig
 import os
 import yaml
+import json
+import re
 
 class JobAnalyzerAgent(Agent):
     def __init__(self):
         # 从环境变量获取API密钥
         qwen_api_key = os.getenv("QWEN_API_KEY")
         
-        # 从配置文件加载模型配置
-        with open("configs/recruitment_config.yml", "r") as f:
-            config = yaml.safe_load(f)
+        # 检查API密钥是否存在
+        if not qwen_api_key:
+            raise ValueError("QWEN_API_KEY环境变量未设置，请检查.env文件配置")
         
-        qwen_config = config["models"]["qwen"]
-        
-        # 初始化LLM（使用阿里云百炼平台Qwen模型）
-        self.llm = OpenAICompatible(
-            model_name=qwen_config["model_name"],
-            base_url=qwen_config["base_url"],
+        # 初始化LLM
+        llm = OpenAIModelConfig(
+            model="qwen2-72b-instruct",
             api_key=qwen_api_key,
-            temperature=qwen_config["temperature"],
-            max_tokens=qwen_config["max_tokens"]
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
         )
-        super().__init__(toolkit=Toolkit(), llm=self.llm)
-    
-    def parse_job_description(self, description):
-        """解析模糊岗位描述为标准化需求"""
-        prompt = f"""
-        请将以下岗位描述转换为标准化岗位需求：
-        {description}
         
-        输出格式：
-        - 岗位名称
-        - 核心职责（3-5条）
-        - 任职要求：学历、工作经验、专业技能（关键词列表）
+        # 调用父类构造函数
+        super().__init__(
+            llm=llm,
+            tools=[],  # 岗位分析暂时不需要工具
+            system_prompt=self._get_system_prompt()
+        )
+    
+    def _get_system_prompt(self):
+        """获取系统提示"""
+        return """
+        你是一个专业的职位分析专家，能够准确解析职位描述中的关键信息。
+        请从职位描述中提取以下信息：
+        1. 职位名称
+        2. 公司名称
+        3. 工作地点
+        4. 薪资范围
+        5. 工作经验要求
+        6. 学历要求
+        7. 技能要求（关键技术栈）
+        8. 工作职责
+        9. 任职要求
+        10. 公司福利
+        11. 工作类型（全职/兼职/实习）
+        12. 行业领域
+        
+        请以结构化的格式输出结果。
+        """
+    
+    def parse_job_description(self, job_description: str) -> dict:
+        """分析职位描述并提取关键信息"""
+        prompt = f"""
+        请分析以下职位描述并以标准JSON格式输出结果：
+        
+        职位描述：
+        {job_description}
+        
+        请严格按照以下格式输出，且必须返回有效的JSON格式：
+        {{
+            "position": "职位名称",
+            "company": "公司名称",
+            "location": "工作地点",
+            "salary_range": "薪资范围",
+            "experience_required": "工作经验要求",
+            "education_required": "学历要求",
+            "skills": ["技能1", "技能2", "技能3"],
+            "responsibilities": ["职责1", "职责2"],
+            "requirements": ["要求1", "要求2"],
+            "benefits": ["福利1", "福利2"],
+            "employment_type": "工作类型",
+            "industry": "行业领域"
+        }}
+        
+        重要：只返回JSON，不要包含其他文字或解释。
         """
         
-        response = self.llm.generate(prompt=prompt)
-        return self._format_result(response)
+        try:
+            # 使用run方法运行Agent
+            response = self.run(prompt)
+            
+            # 这里应该解析响应并返回结构化数据
+            # 为简化，我们直接返回响应
+            return {"raw_response": response}
+        except Exception as e:
+            return {"error": f"分析职位描述时出错: {str(e)}"}
     
-    def _format_result(self, raw_text):
-        """格式化LLM输出为结构化数据"""
-        # 简化：实际实现需根据文本内容解析
-        return {
-            "title": "行政专员",
-            "responsibilities": "1. 负责日常行政事务；2. 文档管理；3. 会议安排",
-            "requirements": {
-                "education": "大专及以上",
-                "experience": "1年以上行政经验",
-                "skills": ["Excel", "沟通协调", "文档编写"]
-            }
-        }
+    

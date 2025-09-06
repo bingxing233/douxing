@@ -1,4 +1,4 @@
-// configs/recruitment_config.yml
+---
 # 招聘相关配置
 api_keys:
   # NeMo API密钥（示例格式）

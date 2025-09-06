@@ -1,6 +1,6 @@
-// backend/agents/resume_agent.py
-from nemo_agent import Agent, Toolkit
-from nemo_agent.llms import OpenAICompatible
+# backend/agents/resume_agent.py
+from nat.agent.tool_calling_agent.agent import ToolCallAgentGraph as Agent
+from nat.llm.openai_llm import OpenAIModelConfig as OpenAICompatible
 import os
 import yaml
 
@@ -9,41 +9,89 @@ class ResumeScreenerAgent(Agent):
         # 从环境变量获取API密钥
         qwen_api_key = os.getenv("QWEN_API_KEY")
         
-        # 从配置文件加载模型配置
-        with open("configs/recruitment_config.yml", "r") as f:
-            config = yaml.safe_load(f)
+        # 检查API密钥是否存在
+        if not qwen_api_key:
+            raise ValueError("QWEN_API_KEY环境变量未设置，请检查.env文件配置")
         
-        qwen_config = config["models"]["qwen"]
-        
-        # 初始化LLM（使用阿里云百炼平台Qwen模型）
-        self.llm = OpenAICompatible(
-            model_name=qwen_config["model_name"],
-            base_url=qwen_config["base_url"],
+        # 初始化LLM
+        llm = OpenAICompatible(
+            model="qwen2-72b-instruct",  # 或其他适当的模型
             api_key=qwen_api_key,
-            temperature=qwen_config["temperature"],
-            max_tokens=qwen_config["max_tokens"]
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
         )
-        super().__init__(toolkit=Toolkit(), llm=self.llm)
+        
+        # 调用父类构造函数
+        super().__init__(
+            llm=llm,
+            tools=[],  # 简历筛选暂时不需要工具
+            system_prompt=self._get_system_prompt()
+        )
     
-    def screen_resumes(self, resume_texts, job_requirements):
-        """根据岗位需求筛选简历"""
+    def _get_system_prompt(self):
+        """获取系统提示"""
+        return """
+        你是一个专业的简历筛选专家，能够准确评估候选人与职位的匹配度。
+        请根据职位要求分析简历，并提供详细的匹配度分析。
+        """
+    
+    def screen_resume(self, resume_text: str, job_requirements: dict) -> dict:
+        """筛选简历并评估与职位的匹配度"""
+        prompt = f"""
+        请根据以下职位要求分析简历并评估匹配度：
+        
+        职位要求：
+        {yaml.dump(job_requirements, default_flow_style=False)}
+        
+        简历内容：
+        {resume_text}
+        
+        请提供以下信息，并严格按照JSON格式输出，不要包含其他文字：
+        {{
+            "match_score": 85,
+            "skills_match": {{
+                "matched_skills": ["技能1", "技能2"],
+                "missing_skills": ["技能3", "技能4"],
+                "additional_skills": ["技能5"]
+            }},
+            "experience_match": "工作经验匹配度分析",
+            "education_match": "学历匹配度分析",
+            "strengths": ["优势1", "优势2"],
+            "weaknesses": ["不足1", "不足2"],
+            "recommendations": ["建议1", "建议2"],
+            "overall_assessment": "总体评价"
+        }}
+        """
+        
+        try:
+            response = self.run(prompt)
+            # 返回响应
+            return {
+                "status": "success",
+                "raw_response": response
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"筛选简历时出错: {str(e)}"
+            }
+    
+
+    def screen_resumes(self, resume_texts: list, job_requirements: dict) -> list:
+        """批量筛选简历"""
         results = []
-        for text in resume_texts:
-            # 简化：实际需提取简历关键信息
-            score = self._calculate_match_score(text, job_requirements)
-            results.append({
-                "match_score": score,
-                "match_level": "匹配" if score >=70 else "待评估" if score >=40 else "不匹配",
-                "reason": self._generate_reason(text, job_requirements, score)
-            })
+        for i, resume_text in enumerate(resume_texts):
+            try:
+                result = self.screen_resume(resume_text, job_requirements)
+                results.append({
+                    "resume_index": i,
+                    "result": result
+                })
+            except Exception as e:
+                results.append({
+                    "resume_index": i,
+                    "result": {
+                        "status": "error",
+                        "message": f"处理简历时出错: {str(e)}"
+                    }
+                })
         return results
-    
-    def _calculate_match_score(self, resume_text, requirements):
-        """计算匹配分数（简化版）"""
-        skills = requirements["requirements"]["skills"]
-        match_count = sum(skill.lower() in resume_text.lower() for skill in skills)
-        return min(100, int((match_count / len(skills)) * 70 + 30))  # 基础分30+技能匹配分
-    
-    def _generate_reason(self, resume_text, requirements, score):
-        """生成匹配理由"""
-        return f"技能匹配度{score}%，经验要求基本符合"
