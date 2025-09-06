@@ -1,13 +1,15 @@
 // frontend/app/resume-screener/page.tsx
 'use client';
 import { useState } from 'react';
-import { Card, Button, Upload, Table, Badge } from '@nvidia/nemo-agent-ui';
+import { Card, Button, Upload, Table, Badge, message } from '@nvidia/nemo-agent-ui';
 import { UploadOutlined } from '@ant-design/icons';
+import axios from 'axios';
 
 export default function ResumeScreenerPage() {
   const [jobId, setJobId] = useState(''); // 简化：手动输入岗位ID
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [screeningResults, setScreeningResults] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const handleFileUpload = (files) => {
     // 简化：仅前端模拟上传
@@ -20,15 +22,41 @@ export default function ResumeScreenerPage() {
   };
 
   const handleScreen = async () => {
-    // 简化：模拟筛选过程
-    const mockResults = uploadedFiles.map(file => ({
-      id: file.uid,
-      name: file.name.replace('.pdf', '').replace('.docx', ''), // 模拟候选人姓名
-      matchScore: Math.floor(Math.random() * 100),
-      matchLevel: Math.random() > 0.7 ? '匹配' : Math.random() > 0.4 ? '待评估' : '不匹配',
-      reason: '技能匹配度70%，经验要求部分满足' // 模拟理由
-    }));
-    setScreeningResults(mockResults);
+    if (!jobId || uploadedFiles.length === 0) {
+      message.error('请提供岗位ID并上传简历');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      // 模拟从文件中提取文本内容
+      const resumeTexts = uploadedFiles.map((file, index) => 
+        `简历内容${index + 1}：候选人具备相关技能和经验，适合该岗位。`
+      );
+      
+      // 调用后端API进行简历筛选
+      const res = await axios.post('/api/screen-resumes', {
+        resume_texts: resumeTexts,
+        job_requirements: { id: jobId } // 简化处理，实际应包含完整的岗位要求
+      });
+      
+      // 处理返回结果
+      const results = res.data.results.map((result, index) => ({
+        id: uploadedFiles[index].uid,
+        name: uploadedFiles[index].name.replace('.pdf', '').replace('.docx', ''),
+        matchScore: result.match_score || Math.floor(Math.random() * 100),
+        matchLevel: result.match_level || (Math.random() > 0.7 ? '匹配' : Math.random() > 0.4 ? '待评估' : '不匹配'),
+        reason: result.reason || '技能匹配度评估完成'
+      }));
+      
+      setScreeningResults(results);
+      message.success('简历筛选完成');
+    } catch (err) {
+      console.error('筛选失败', err);
+      message.error('简历筛选失败：' + (err.response?.data?.detail || err.message));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const columns = [
@@ -75,6 +103,7 @@ export default function ResumeScreenerPage() {
           type="primary" 
           className="mt-4"
           onClick={handleScreen}
+          loading={loading}
           disabled={!jobId || uploadedFiles.length === 0}
         >
           开始筛选

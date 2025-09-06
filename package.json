@@ -12,10 +12,7 @@
   "dependencies": {
     "next": "14.0.0",
     "typescript": "^5.2.2",
-    "axios": "^1.6.2",
-    "fastapi": "^0.95.0",
-    "uvicorn": "^0.21.1",
-    "pydantic": "^2.0.0"
+    "axios": "^1.6.2"
   },
   "devDependencies": {
     "eslint": "^8.42.0",

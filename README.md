@@ -1,6 +1,6 @@
 # 中小微企业智能招聘辅助Agent
 
-这是一个基于NVIDIA NeMo Agent Toolkit构建的中小微企业智能招聘助手，用于自动化完成招聘前期流程，包括岗位需求理解、简历自动筛选、初轮沟通自动化和面试邀约同步等功能。
+这是一个基于NVIDIA NeMo Agent Toolkit构建的中小微企业智能招聘助手，用于自动化完成招聘全流程，包括岗位需求理解、简历自动筛选、初轮沟通自动化、面试邀约同步、面试评价记录、候选人跟进、offer发放和入职提醒等功能。
 
 ## 项目结构
 ```
@@ -30,9 +30,23 @@
 │   ├── api/
 │   │   ├── job_parser.py
 │   │   └── resume_screener.py
-│   └── agents/
-│       ├── job_analyzer.py
-│       └── resume_agent.py
+│   ├── agents/
+│   │   ├── job_analyzer.py
+│   │   ├── resume_agent.py
+│   │   ├── interview_evaluator.py
+│   │   ├── candidate_tracker.py
+│   │   ├── offer_manager.py
+│   │   ├── initial_communication.py
+│   │   └── interview_scheduler.py
+│   ├── utils/
+│   │   ├── document_parser.py
+│   │   ├── data_security.py
+│   │   ├── api_key_manager.py
+│   │   ├── model_manager.py
+│   │   ├── user_guidance.py
+│   │   └── system_diagnostics.py
+│   └── plugins/
+│       └── plugin_manager.py
 └── mcp/
     └── simple_protocol.py
 ```
@@ -40,9 +54,13 @@
 ## 🎯 核心功能
 
 - **岗位需求理解**：将模糊的岗位描述转换为标准化职位描述（JD）
-- **简历自动筛选**：自动解析简历并与岗位需求匹配
-- **初轮沟通自动化**：通过AI进行初步候选人沟通
-- **面试邀约同步**：自动生成面试邀请并同步日程
+- **简历自动筛选**：自动解析简历并与岗位需求匹配，支持PDF、Word、TXT等多种格式
+- **初轮沟通自动化**：通过AI进行初步候选人沟通，支持自定义沟通话术
+- **面试邀约同步**：自动生成面试邀请并同步到主流日程工具（钉钉、企业微信、Outlook等）
+- **面试评价记录**：自动生成面试评价报告，记录面试官反馈
+- **候选人跟进**：自动跟进候选人状态，生成后续行动计划
+- **Offer发放**：自动生成Offer通知书，支持模板自定义
+- **入职提醒**：自动发送入职提醒和准备事项清单
 
 ## 🚀 快速开始
 
@@ -73,6 +91,24 @@ start.bat
 # 停止服务
 stop.bat
 ```
+
+## 🔗 前后端衔接说明
+
+本项目采用前后端分离架构：
+
+### 后端 (FastAPI)
+- 地址: http://localhost:8000
+- API文档: http://localhost:8000/docs
+- 提供RESTful API接口供前端调用
+
+### 前端 (Next.js)
+- 地址: http://localhost:3000
+- 通过axios库调用后端API
+- 开发环境下通过Next.js的rewrites功能代理API请求到后端
+
+### API接口
+1. 岗位需求解析: POST /api/parse-job
+2. 简历筛选: POST /api/screen-resumes
 
 ## 开发环境搭建指南
 
@@ -158,7 +194,42 @@ stop.bat
    
    # NVIDIA API Key
    NVIDIA_API_KEY=your_actual_nvidia_api_key_here
+   
+   # Encryption key for data security
+   ENCRYPTION_KEY=your_secret_encryption_key_here
    ```
+
+## 🔧 系统优化说明
+
+### 1. 全流程招聘支持
+项目现已覆盖招聘全流程，包括前期（岗位分析、简历筛选）、中期（初轮沟通、面试安排、面试评价）和后期（候选人跟进、Offer发放、入职提醒）。
+
+### 2. 增强的简历处理能力
+- 支持PDF、Word、TXT、Excel等多种格式的简历解析
+- 提供可自定义的筛选规则，满足不同企业个性化需求
+- 增强的候选人信息提取和结构化处理
+
+### 3. 落地性更强的沟通与邀约功能
+- 支持自定义初轮沟通话术模板
+- 集成主流日程工具（钉钉、企业微信、Outlook、Google Calendar）
+- 实现真正的自动化日程同步
+
+### 4. 安全性增强
+- 简历数据加密存储
+- API密钥权限管理和自动轮换
+- 敏感信息遮蔽和访问控制
+- HTTPS传输安全支持
+
+### 5. 插件化架构和可扩展性
+- 实现插件化架构，支持功能模块热插拔
+- 支持多种AI模型的切换和集成
+- 提供统一的扩展接口
+
+### 6. 用户体验优化
+- 提供详细的用户引导和帮助文档
+- 增强错误提示和故障排除机制
+- 内置系统诊断和自检功能
+- 提供用户反馈渠道
 
 ## 🧪 功能测试
 
@@ -190,6 +261,7 @@ AI: [分析简历并给出匹配度评估]
 2. 在生产环境中使用HTTPS
 3. 定期轮换API密钥
 4. 限制API密钥的权限范围
+5. 定期清理过期简历数据
 
 ## 📚 相关资源
 

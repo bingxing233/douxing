@@ -30,3 +30,95 @@ service:
   
   # 是否启用调试模式
   debug: false
+
+# 招聘流程配置
+recruitment_process:
+  # 启用的招聘环节
+  stages:
+    - job_analysis
+    - resume_screening
+    - initial_communication
+    - interview_scheduling
+    - interview_evaluation
+    - candidate_tracking
+    - offer_management
+    - onboarding
+
+  # 面试评价配置
+  interview_evaluation:
+    enabled: true
+    auto_generate_report: true
+
+  # 候选人跟进配置
+  candidate_tracking:
+    enabled: true
+    auto_followup: true
+
+  # Offer管理配置
+  offer_management:
+    enabled: true
+    template_customization: true
+
+# 日程工具集成配置
+calendar_integrations:
+  # 钉钉集成
+  dingtalk:
+    enabled: false
+    app_key: "your_dingtalk_app_key"
+    app_secret: "your_dingtalk_app_secret"
+  
+  # 企业微信集成
+  wechat_work:
+    enabled: false
+    corp_id: "your_corp_id"
+    secret: "your_secret"
+  
+  # Outlook集成
+  outlook:
+    enabled: false
+    client_id: "your_client_id"
+    client_secret: "your_client_secret"
+  
+  # Google Calendar集成
+  google_calendar:
+    enabled: false
+    client_id: "your_client_id"
+    client_secret: "your_client_secret"
+
+# 沟通模板配置
+communication_templates:
+  default: |
+    1. 问候和自我介绍
+    2. 确认对方是否为[候选人姓名]
+    3. 简要介绍公司和职位
+    4. 询问对方目前求职状态
+    5. 了解对方薪资期望和到岗时间
+    6. 确认对方是否有其他面试或offer
+    7. 介绍下一步流程（如正式面试安排）
+  
+  tech_position: |
+    1. 问候和自我介绍
+    2. 确认技术背景和项目经验
+    3. 介绍团队技术栈和挑战
+    4. 询问技术兴趣和职业规划
+    5. 讨论薪资期望和股权激励
+    6. 安排技术面试环节
+
+# 安全配置
+security:
+  # 简历保留天数
+  resume_retention_days: 30
+  
+  # 是否启用数据加密
+  enable_encryption: true
+  
+  # API密钥轮换周期（天）
+  key_rotation_days: 90
+
+# 插件配置
+plugins:
+  # 启用的插件列表
+  enabled_plugins: []
+  
+  # 插件目录
+  plugins_dir: "plugins"
